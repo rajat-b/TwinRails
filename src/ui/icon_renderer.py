@@ -28,6 +28,10 @@ def render_tray_icon(size: int = 64) -> Image.Image:
     - Top Rail: Spent quota track filled with vibrant Claude Coral (#D97756).
     - Bottom Rail: Elapsed sprint time in gray (#A8A29E) with lockout red tail (#EF4444).
     - Needle: Crisp high-contrast white (#FFFFFF) needle spanning both tracks at the center.
+
+    docs/logo.svg is a hand-kept vector copy of this same 64-unit geometry,
+    used by the README because this Pillow render has no anti-aliasing and
+    looked jagged when the browser scaled it. Change both together.
     """
     base_size = 256
     scale = base_size / 64.0

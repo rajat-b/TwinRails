@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" width="112" alt="TwinRails logo: a coral quota rail above a grey time rail ending in red, crossed by a white needle">
+  <img src="docs/logo.svg" width="112" alt="TwinRails logo: a coral quota rail above a grey time rail ending in red, crossed by a white needle">
 </p>
 
 <h1 align="center">TwinRails</h1>

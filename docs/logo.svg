@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <!-- The TwinRails mark as a vector, for the README. Same 64-unit geometry
+       and colours as render_tray_icon() in src/ui/icon_renderer.py; Pillow
+       draws strokes inside a shape's box, so strokes here are inset by half
+       their width. Keep the two in step if the mark ever changes. -->
+  <title>TwinRails</title>
+  <defs>
+    <clipPath id="top-rail"><rect x="10" y="17" width="44" height="14" rx="5"/></clipPath>
+    <clipPath id="time-rail"><rect x="10" y="37" width="44" height="7" rx="3"/></clipPath>
+  </defs>
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#23211F"
+        stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="2"/>
+  <g clip-path="url(#top-rail)">
+    <rect x="10" y="17" width="44" height="14" fill="#1E1E1E"/>
+    <rect x="10" y="17" width="22" height="14" fill="#D97756"/>
+  </g>
+  <rect x="10.5" y="17.5" width="43" height="13" rx="4.5" fill="none" stroke="#57514C" stroke-width="1"/>
+  <g clip-path="url(#time-rail)">
+    <rect x="10" y="37" width="44" height="7" fill="#383533"/>
+    <rect x="10" y="37" width="22" height="7" fill="#A8A29E"/>
+    <rect x="45" y="37" width="9" height="7" fill="#EF4444"/>
+  </g>
+  <rect x="30" y="11" width="4" height="39" fill="#FFFFFF"/>
+</svg>
