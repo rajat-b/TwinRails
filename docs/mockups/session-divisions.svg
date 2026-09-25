@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="650" viewBox="0 0 920 650" role="img" aria-label="Mockup of subtle hour and day divisions on the widget's time rails">
+  <defs>
+    <style>
+      text { font-family: 'Segoe UI', Arial, sans-serif; }
+      .title { fill: #FAF9F5; font-size: 25px; font-weight: 700; }
+      .subtitle { fill: #A8A29E; font-size: 13px; }
+      .section { fill: #FAF9F5; font-size: 15px; font-weight: 650; }
+      .tag { fill: #A8A29E; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+      .hint { fill: #A8A29E; font-size: 12px; }
+      .segment { fill: #78716C; font-size: 11px; text-anchor: middle; }
+      .percent { fill: #FAF9F5; font-size: 16px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect width="920" height="650" fill="#1C1B1A"/>
+  <text class="title" x="48" y="54">Subtle hour and day divisions</text>
+  <text class="subtitle" x="48" y="78">Layout preview · magnified above, with the actual 170 px bar width below</text>
+
+  <!-- Five-hour window: the top fill is quota; the lower rail is time. -->
+  <rect x="48" y="106" width="824" height="190" rx="14" fill="#262422" stroke="#383633"/>
+  <text class="tag" x="77" y="142">5H</text>
+  <text class="section" x="116" y="142">Five-hour session</text>
+  <text class="hint" x="803" y="142" text-anchor="end">4 internal hour marks</text>
+  <rect x="116" y="162" width="640" height="36" rx="4" fill="#1E1E1E" stroke="#57514C"/>
+  <path d="M120 163 H508.8 V197 H120 A3 3 0 0 1 117 194 V166 A3 3 0 0 1 120 163 Z" fill="#D97756"/>
+  <g stroke="#211F1D" stroke-width="2" opacity="0.38">
+    <path d="M244 164 V197 M372 164 V197 M500 164 V197"/>
+  </g>
+  <path d="M628 164 V197" stroke="#9A928B" stroke-width="2" opacity="0.45"/>
+  <text class="percent" x="775" y="187">62%</text>
+  <rect x="116" y="211" width="640" height="8" rx="2" fill="#514C47"/>
+  <rect x="116" y="211" width="281.6" height="8" rx="2" fill="#A8A29E"/>
+  <!-- The rail repeats the guides on the actual time axis. -->
+  <g stroke="#211F1D" stroke-width="2" opacity="0.62">
+    <path d="M244 208 V222 M372 208 V222"/>
+  </g>
+  <g stroke="#D0CBC4" stroke-width="2" opacity="0.55">
+    <path d="M500 208 V222 M628 208 V222"/>
+  </g>
+  <path d="M397.6 158 V223" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <g class="segment">
+    <text x="180" y="248">hour 1</text><text x="308" y="248">hour 2</text>
+    <text x="436" y="248">hour 3</text><text x="564" y="248">hour 4</text>
+    <text x="692" y="248">hour 5</text>
+  </g>
+  <text class="hint" x="116" y="274">Faint bar splits repeat on the time rail. The white needle still marks now.</text>
+
+  <!-- Seven-day window. -->
+  <rect x="48" y="312" width="824" height="190" rx="14" fill="#262422" stroke="#383633"/>
+  <text class="tag" x="77" y="348">7D</text>
+  <text class="section" x="116" y="348">Weekly session</text>
+  <text class="hint" x="803" y="348" text-anchor="end">6 internal day marks</text>
+  <rect x="116" y="368" width="640" height="36" rx="4" fill="#1E1E1E" stroke="#57514C"/>
+  <path d="M120 369 H314.4 V403 H120 A3 3 0 0 1 117 400 V372 A3 3 0 0 1 120 369 Z" fill="#2C84DB"/>
+  <g stroke="#211F1D" stroke-width="2" opacity="0.38">
+    <path d="M207.43 370 V403 M298.86 370 V403"/>
+  </g>
+  <g stroke="#9A928B" stroke-width="2" opacity="0.45">
+    <path d="M390.29 370 V403 M481.71 370 V403 M573.14 370 V403 M664.57 370 V403"/>
+  </g>
+  <text class="percent" x="775" y="393">31%</text>
+  <rect x="116" y="417" width="640" height="8" rx="2" fill="#514C47"/>
+  <rect x="116" y="417" width="441.6" height="8" rx="2" fill="#A8A29E"/>
+  <g stroke="#211F1D" stroke-width="2" opacity="0.62">
+    <path d="M207.43 414 V428 M298.86 414 V428 M390.29 414 V428 M481.71 414 V428"/>
+  </g>
+  <g stroke="#D0CBC4" stroke-width="2" opacity="0.55">
+    <path d="M573.14 414 V428 M664.57 414 V428"/>
+  </g>
+  <path d="M557.6 364 V429" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <g class="segment">
+    <text x="161.71" y="454">day 1</text><text x="253.14" y="454">day 2</text>
+    <text x="344.57" y="454">day 3</text><text x="436" y="454">day 4</text>
+    <text x="527.43" y="454">day 5</text><text x="618.86" y="454">day 6</text>
+    <text x="710.29" y="454">day 7</text>
+  </g>
+  <text class="hint" x="116" y="480">The day marks are evenly spaced across the full seven-day reset window.</text>
+
+  <!-- Small preview uses the real taskbar bar dimensions: 170 x 14 + 3 px rail. -->
+  <text class="section" x="48" y="548">At taskbar size</text>
+  <text class="hint" x="48" y="571">The marks are 1 px wide; the now needle is 2 px.</text>
+  <g transform="translate(450 533)">
+    <text class="tag" x="0" y="15">5H</text>
+    <rect x="33" y="0" width="170" height="14" fill="#1E1E1E" stroke="#57514C"/>
+    <rect x="33" y="0" width="105.4" height="14" fill="#D97756"/>
+    <g stroke="#211F1D" stroke-width="1" opacity="0.55"><path d="M67 0 V14 M101 0 V14 M135 0 V14"/></g>
+    <path d="M169 0 V14" stroke="#9A928B" stroke-width="1" opacity="0.65"/>
+    <rect x="33" y="17" width="170" height="3" fill="#514C47"/>
+    <rect x="33" y="17" width="74.8" height="3" fill="#A8A29E"/>
+    <g stroke="#211F1D" stroke-width="1"><path d="M67 16 V21 M101 16 V21"/></g>
+    <g stroke="#D0CBC4" stroke-width="1"><path d="M135 16 V21 M169 16 V21"/></g>
+    <path d="M107.8 -2 V22" stroke="#FFFFFF" stroke-width="2"/>
+    <text class="tag" x="250" y="15">7D</text>
+    <rect x="283" y="0" width="170" height="14" fill="#1E1E1E" stroke="#57514C"/>
+    <rect x="283" y="0" width="52.7" height="14" fill="#2C84DB"/>
+    <g stroke="#211F1D" stroke-width="1" opacity="0.55"><path d="M307.29 0 V14 M331.57 0 V14"/></g>
+    <g stroke="#9A928B" stroke-width="1" opacity="0.65"><path d="M355.86 0 V14 M380.14 0 V14 M404.43 0 V14 M428.71 0 V14"/></g>
+    <rect x="283" y="17" width="170" height="3" fill="#514C47"/>
+    <rect x="283" y="17" width="117.3" height="3" fill="#A8A29E"/>
+    <g stroke="#211F1D" stroke-width="1"><path d="M307.29 16 V21 M331.57 16 V21 M355.86 16 V21 M380.14 16 V21"/></g>
+    <g stroke="#D0CBC4" stroke-width="1"><path d="M404.43 16 V21 M428.71 16 V21"/></g>
+    <path d="M400.3 -2 V22" stroke="#FFFFFF" stroke-width="2"/>
+  </g>
+  <text class="hint" x="48" y="625">The unfilled taskbar track stays transparent; only its outline and 1 px guide marks are painted.</text>
+</svg>

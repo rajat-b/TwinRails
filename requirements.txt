@@ -1,0 +1,10 @@
+# Pinned after checking the Windows/Python 3.14 package index on 2026-09-20.
+# curl_cffi remains required for the Claude cookie fallback; its wheel avoids a
+# compiler error on first install.
+pystray==0.19.5
+Pillow==12.3.0
+curl_cffi==0.16.3
+requests==2.34.2
+urllib3==2.8.0
+psutil>=5.9.0
+
