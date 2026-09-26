@@ -135,6 +135,24 @@ need any of this. The unfilled rail reuses the track outline color and the
 elapsed portion reuses the secondary text color, so both follow the sampled
 theme automatically. See [Reading the bar](reading-the-bar.md).
 
+**The mark on the left follows the same rules.** Its quota rail is painted
+in `track_color` with a `track_outline` border, so it is hollow wherever
+the bars are. Its time rail's unfilled part is the track outline colour,
+and the elapsed part is the secondary text colour, exactly like a row.
+Until 2026-09-26 the mark used fixed dark greys copied from the tray icon
+(`#1E1E1E` with a `#57514C` border, and a `#3B3835` time rail). On a dark
+taskbar that passed. On a light one the quota rail's empty half became a
+solid black box, which reads as "full" and is the opposite of the bars next
+to it. The time rail's unused part also landed on the same dark grey as
+its elapsed part (`#3B3835` against `#3E3B38`), so the split disappeared.
+The logo image (tray icon, flyout header, taskbar button, and the README's
+`docs/logo.svg`) keeps fixed colours, because it is drawn on its own dark
+tile and never meets the taskbar colour directly. Its empty half follows
+the same idea by other means: since 2026-09-26 it is unpainted, and only a
+thicker, lighter outline marks it. The old near-tile fill made that half
+vanish in the flyout header. The comment in `render_tray_icon()` lists the
+options rejected along the way.
+
 The pacing *fills* keep their true brand colors and are never adjusted.
 They sit inside the bar with the outline framing them, so they are read
 against the fill's own edges rather than against the taskbar — which is

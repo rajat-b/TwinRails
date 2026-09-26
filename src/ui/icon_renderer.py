@@ -46,7 +46,18 @@ def render_tray_icon(size: int = 64) -> Image.Image:
         outline=OUTLINE_COLOR, width=round(2 * scale)
     )
 
-    # 2. Top Quota Rail (Track + Claude Coral Fill)
+    # 2. Top Quota Rail (Claude Coral fill; the empty half is hollow)
+    # The empty half is left unpainted, so the tile shows through, and only
+    # the outline marks it -- how the bars show "empty" too. It used to be a
+    # #1E1E1E fill in a 1-unit #57514C outline: the fill matched the tile to
+    # within 1.08:1 and the outline was half a pixel wide at the flyout
+    # header's 40px, so on dark backgrounds the empty half vanished. The
+    # outline is now 1.5 units in #736E6B (the bars' own recipe: secondary
+    # text 40% of the way to the tile, 2.7:1 against it). Compared on
+    # 2026-09-26 at 20/32/40px on dark and light backgrounds and rejected:
+    # a 2-unit outline (heavy at 40px); a 12% white tint, which on a fixed
+    # tile is just a grey slab that reads as filled; and a hole through the
+    # tile, which shows a light taskbar as a bright, "full" bar.
     top_box = [round(10 * scale), round(17 * scale), round(54 * scale), round(31 * scale)]
     top_mask = Image.new("L", (base_size, base_size), 0)
     tm_draw = ImageDraw.Draw(top_mask)
@@ -54,10 +65,9 @@ def render_tray_icon(size: int = 64) -> Image.Image:
 
     top_layer = Image.new("RGBA", (base_size, base_size), (0, 0, 0, 0))
     t_draw = ImageDraw.Draw(top_layer)
-    t_draw.rectangle(top_box, fill="#1E1E1E")
     t_draw.rectangle([top_box[0], top_box[1], round(32 * scale), top_box[3]], fill=CLAUDE_CORAL)
-    img.paste(top_layer, (0, 0), top_mask)
-    draw.rounded_rectangle(top_box, radius=round(5 * scale), outline="#57514C", width=round(1 * scale))
+    img.paste(Image.alpha_composite(img, top_layer), (0, 0), top_mask)
+    draw.rounded_rectangle(top_box, radius=round(5 * scale), outline="#736E6B", width=round(1.5 * scale))
 
     # 3. Bottom Time Rail (Track + Elapsed Gray + Danger Red Tail)
     bot_box = [round(10 * scale), round(37 * scale), round(54 * scale), round(44 * scale)]
