@@ -25,29 +25,65 @@ jobs:
           --hidden-import PIL._tkinter_finder
           --collect-all curl_cffi
           main.py
-      - name: Launch in demo mode, then screenshot
+      - name: Launch in demo mode, then inspect the taskbar
         shell: pwsh
         run: |
+          Add-Type @"
+          using System; using System.Collections.Generic; using System.Runtime.InteropServices;
+          public static class W {
+            public delegate bool EnumProc(IntPtr h, IntPtr l);
+            [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindow(string c, string t);
+            [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr p, EnumProc cb, IntPtr l);
+            [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+            [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+            public static List<string> ChildrenOwnedBy(IntPtr parent, uint[] pids) {
+              var found = new List<string>();
+              EnumChildWindows(parent, (h, l) => {
+                uint pid; GetWindowThreadProcessId(h, out pid);
+                if (Array.IndexOf(pids, pid) >= 0) {
+                  RECT r; GetWindowRect(h, out r);
+                  found.Add(String.Format("  pid={0} visible={1} rect=({2},{3})-({4},{5})", pid, IsWindowVisible(h), r.L, r.T, r.R, r.B));
+                }
+                return true;
+              }, IntPtr.Zero);
+              return found;
+            }
+          }
+          "@
           $p = Start-Process -FilePath dist\TwinRails.exe -ArgumentList '--demo','--bar' -PassThru
           $null = $p.Handle
           Start-Sleep -Seconds 25
           "bootloader alive after 25s: $(-not $p.HasExited)"
-          if ($p.HasExited) { "exit code: $($p.ExitCode)" }
-          Get-Process TwinRails -ErrorAction SilentlyContinue | Format-Table Id, Responding, MainWindowTitle -AutoSize | Out-String -Width 200
+          Get-Process TwinRails | Format-Table Id, Responding, MainWindowTitle -AutoSize | Out-String -Width 200
+          $pids = [uint32[]]@(Get-Process TwinRails | ForEach-Object { [uint32]$_.Id })
+          $tray = [W]::FindWindow("Shell_TrayWnd", $null)
+          $kids = [W]::ChildrenOwnedBy($tray, $pids)
+          "TwinRails windows inside Shell_TrayWnd: $($kids.Count)"
+          $kids
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           $b = [System.Windows.Forms.SystemInformation]::VirtualScreen
-          "screen: $($b.Width)x$($b.Height)"
           $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
           $g = [System.Drawing.Graphics]::FromImage($bmp)
           $g.CopyFromScreen($b.Left, $b.Top, 0, 0, $bmp.Size)
-          $bmp.Save("$PWD\screen.png")
-          $strip = $bmp.Clone((New-Object System.Drawing.Rectangle 0, ($b.Height - 80), $b.Width, 80), $bmp.PixelFormat)
-          $strip.Save("$PWD\taskbar.png")
-          Get-ChildItem "$env:USERPROFILE\.ai_session_limits" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          "screen: $($b.Width)x$($b.Height)"
+          $targets = @{ coral = @(217,119,86); amber = @(245,158,11); red = @(239,68,68); white = @(255,255,255) }
+          $counts = @{}; $minx = @{}; $maxx = @{}
+          foreach ($k in $targets.Keys) { $counts[$k] = 0; $minx[$k] = 99999; $maxx[$k] = -1 }
+          for ($y = $b.Height - 80; $y -lt $b.Height; $y++) {
+            for ($x = 0; $x -lt $b.Width; $x++) {
+              $c = $bmp.GetPixel($x, $y)
+              foreach ($k in $targets.Keys) {
+                $t = $targets[$k]
+                if ([Math]::Abs($c.R - $t[0]) + [Math]::Abs($c.G - $t[1]) + [Math]::Abs($c.B - $t[2]) -lt 45) {
+                  $counts[$k]++
+                  if ($x -lt $minx[$k]) { $minx[$k] = $x }
+                  if ($x -gt $maxx[$k]) { $maxx[$k] = $x }
+                }
+              }
+            }
+          }
+          "bottom 80px of the screen, pixels near each bar colour:"
+          foreach ($k in $targets.Keys) { "  $($k): $($counts[$k]) pixels, x=$($minx[$k])..$($maxx[$k])" }
           Stop-Process -Name TwinRails -Force -ErrorAction SilentlyContinue
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gui-trial
-          path: |
-            screen.png
-            taskbar.png
