@@ -5,3 +5,6 @@ __pycache__/
 .vscode/
 .idea/
 reference-claude-counter/
+build/
+dist/
+*.spec

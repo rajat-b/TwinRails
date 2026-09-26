@@ -34,3 +34,6 @@ change the code.
 - **[Fetching Claude's usage data](fetching-claude-data.md)** — the verified
   OAuth response shape, the cookie fallback, and why that fallback still needs
   a Chrome TLS fingerprint. Read this before touching `claude_client.py`.
+- **[Releasing](releasing.md)** — how `TwinRails.exe` is built and
+  published, cutting a release, and the PyInstaller hidden imports and frozen
+  paths that break the exe if you forget them.

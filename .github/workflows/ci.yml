@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python }})
+    # A pull request from a branch in this repo already ran on push; only
+    # forks need the pull_request run. build and release depend on this job,
+    # so they are skipped with it.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest version the README promises, and the newest.
+        python: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -v
+
+  build:
+    name: Build TwinRails.exe
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -r requirements.txt pyinstaller==6.22.3
+      # pystray picks its backend with importlib at import time, and curl_cffi
+      # ships a native library, so PyInstaller finds neither on its own.
+      - name: Build
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name TwinRails --icon packaging/twinrails.ico
+          --hidden-import pystray._win32
+          --hidden-import PIL._tkinter_finder
+          --collect-all curl_cffi
+          main.py
+      # --version exits after main.py's imports, so this fails if the bundle
+      # is missing a module. A windowed exe shows a dialog on a crash instead
+      # of exiting, hence the timeout.
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\TwinRails.exe -ArgumentList '--version' -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'TwinRails.exe --version did not exit within 2 minutes' }
+          if ($p.ExitCode -ne 0) { throw "TwinRails.exe --version exited with code $($p.ExitCode)" }
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash dist\TwinRails.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  TwinRails.exe" | Out-File -Encoding ascii dist\SHA256SUMS.txt
+          Get-Content dist\SHA256SUMS.txt
+      # Lets anyone check that a downloaded exe was built here, from this
+      # repo's source: gh attestation verify TwinRails.exe -R rajat-b/TwinRails
+      - name: Attest build provenance
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/TwinRails.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TwinRails-exe
+          path: |
+            dist/TwinRails.exe
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tag must match __version__ in main.py
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' main.py)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match __version__ \"$version\" in main.py"
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: TwinRails-exe
+          path: dist
+      - name: Create the release, or add the files to an existing one
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "TwinRails ${GITHUB_REF_NAME#v}" --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" dist/TwinRails.exe dist/SHA256SUMS.txt --clobber

@@ -24,6 +24,9 @@ from src.ui import (
     enable_per_monitor_dpi_v2, render_tray_icon
 )
 
+# The release workflow refuses to publish a tag that doesn't match this.
+__version__ = "1.1.0"
+
 # Enable Per-Monitor V2 DPI awareness for razor-sharp rendering
 enable_per_monitor_dpi_v2()
 
@@ -352,6 +355,9 @@ def main():
     parser = argparse.ArgumentParser(description="TwinRails taskbar widget")
     parser.add_argument("--demo", action="store_true", help="Launch in demo mode with sample limits")
     parser.add_argument("--bar", action="store_true", help="Ensure docked taskbar bar is visible on launch")
+    # Exits after every module has been imported, so CI runs it against the
+    # packaged exe to prove the bundle is complete.
+    parser.add_argument("--version", action="version", version=f"TwinRails {__version__}")
     args = parser.parse_args()
 
     app = AITaskbarApp(force_demo=args.demo, force_bar=args.bar)

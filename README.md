@@ -6,11 +6,51 @@
 
 <p align="center"><strong>Claude and Gemini usage limits in your Windows taskbar, with a forecast of when you'll run out.</strong></p>
 
+<p align="center">
+  <a href="https://github.com/rajat-b/TwinRails/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/rajat-b/TwinRails"></a>
+  <a href="https://github.com/rajat-b/TwinRails/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/rajat-b/TwinRails/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/rajat-b/TwinRails"></a>
+</p>
+
 TwinRails is a small Windows widget that lives inside the taskbar and tracks your AI usage limits: Claude's 5-hour session limit, weekly limit and per-model limits (Claude.ai and Claude Code share them), and Gemini's limits in Google Antigravity. Instead of just a percentage, it projects your current pace forward and shows the exact time you would run out, before it happens.
 
 ![TwinRails in the Windows taskbar showing Claude's 5-hour and weekly limits, with the weekly limit on pace to run out days before it resets](docs/screenshots/taskbar-bar.png)
 
 *Live Windows taskbar capture. Claude's weekly limit is only 25% used, but at this pace it runs out on Monday at 2:31 PM, almost three and a half days before Friday's reset.*
+
+## Install
+
+Read [Risks and limits](#risks-and-limits) first.
+
+**Download.** Get `TwinRails.exe` from the
+[latest release](https://github.com/rajat-b/TwinRails/releases/latest) and run
+it. There is nothing else to install.
+
+- The exe is not code-signed yet, so Windows SmartScreen may warn you the
+  first time. Choose **More info**, then **Run anyway**.
+- Each release is built by [GitHub Actions](.github/workflows/ci.yml) from the
+  tagged source and lists its SHA-256 checksum in `SHA256SUMS.txt`. With the
+  GitHub CLI you can also check where it was built:
+  `gh attestation verify TwinRails.exe -R rajat-b/TwinRails`.
+- Move the exe somewhere permanent before you tick **Start automatically with
+  Windows**. The startup shortcut points at the exe where it is.
+
+**From source.** Needs Python 3.10+ and an internet connection for the first
+run. Double-click `start_widget.bat`: it installs missing packages from
+`requirements.txt`, using `py -3` when available and otherwise `python` on
+PATH. If installation fails, open Command Prompt in the folder and run
+`py -3 -m pip install -r requirements.txt` (or
+`python -m pip install -r requirements.txt`). After that, `run_silent.vbs`
+starts the widget in the background.
+
+**First run.** Right-click the tray icon or click `⚙ Settings` in the flyout:
+
+- Antigravity connects automatically if the IDE is open.
+- If Claude Code is signed in, the widget can read its local OAuth token.
+  Otherwise, paste your Claude `sessionKey` cookie to track Claude.ai limits.
+  This cookie is a browser login credential, so only enter it if you accept
+  the risks below.
+- Choose which metrics you want displayed on the taskbar bar.
 
 ## What makes it different
 
@@ -48,7 +88,24 @@ in Settings.
 
 ## Risks and limits
 
-This is an independent hobby project, and it is provided at your own risk. The Claude integration reads an undocumented usage endpoint. Its cookie fallback asks you to paste a full `sessionKey` login credential from Claude.ai; the widget encrypts that value with Windows DPAPI, but you are still handing a third-party program a credential. Anthropic's [Consumer Terms of Service](https://www.anthropic.com/legal/consumer-terms) prohibit accessing its consumer services through automated or non-human means except through an Anthropic API key, and also prohibit scraping and bypassing protective measures. Your account could be restricted, and the endpoint or integration can stop working without notice.
+This is an independent hobby project, and it is provided at your own risk. Anthropic does not sanction either of the ways TwinRails reads your Claude usage, and both use an undocumented endpoint.
+
+- **Claude Code sign-in** (tried first). TwinRails reads the OAuth token that
+  Claude Code keeps on your PC and uses it to ask for your limits. It never
+  copies or stores the token. Anthropic's
+  [Claude Code legal and compliance page](https://code.claude.com/docs/en/legal-and-compliance#authentication-and-credential-use)
+  says OAuth sign-in is "designed to support ordinary use of Claude Code and
+  other native Anthropic applications"; TwinRails is a third-party app.
+- **Session cookie** (fallback). You paste your Claude.ai `sessionKey` login
+  cookie, which TwinRails encrypts with Windows DPAPI and stores. The same
+  page says developers "may not collect, store, or intermediate Claude.ai
+  credentials or session tokens", and Anthropic's
+  [Consumer Terms of Service](https://www.anthropic.com/legal/consumer-terms)
+  prohibit accessing its consumer services through automated or non-human
+  means except through an Anthropic API key, and also prohibit scraping and
+  bypassing protective measures. This route carries the most risk.
+
+Anthropic says it may enforce these restrictions without prior notice. Your account could be restricted, and either route can stop working at any time.
 
 **Not affiliated with, endorsed by, or sponsored by Anthropic or Google.**
 
@@ -148,17 +205,7 @@ are looking at fresh numbers. Click the logo to refresh straight away.
   - Claude session keys are encrypted at rest using Windows DPAPI (`CryptProtectData`).
   - Antigravity connects directly to the local language server on `127.0.0.1` with zero cloud transmission.
 - **Silent Background Execution**:
-  - One-click toggle for Windows Startup (`run_silent.vbs`).
-
----
-
-## Quick Start
-
-1. First run: double-click `start_widget.bat`. It installs missing packages from `requirements.txt`; this needs Python 3.10+ and an internet connection. The launcher uses `py -3` when available, otherwise `python` on PATH. If installation fails, open Command Prompt in the folder and run `py -3 -m pip install -r requirements.txt` (or `python -m pip install -r requirements.txt`). After that, `run_silent.vbs` starts the widget in the background.
-2. Right-click the tray icon or click `⚙ Settings` in the flyout:
-   - Antigravity connects automatically if the IDE is open!
-   - If Claude Code is signed in, the widget can read its local OAuth token. Otherwise, paste your Claude `sessionKey` cookie to track Claude.ai limits. This cookie is a browser login credential, so only enter it if you accept the risks above.
-   - Choose which metrics you want displayed on the taskbar bar.
+  - One-click **Start automatically with Windows** toggle in Settings. It starts `TwinRails.exe`, or `run_silent.vbs` when you run from source.
 
 ---
 
@@ -166,7 +213,7 @@ are looking at fresh numbers. Click the logo to refresh straight away.
 
 ### How do I see my Claude usage limits in the Windows taskbar?
 
-Run TwinRails (see Quick Start). Claude's 5-hour and weekly limits appear in
+Run TwinRails (see [Install](#install)). Claude's 5-hour and weekly limits appear in
 the taskbar with their reset times, and clicking the bar opens a flyout with
 every limit Claude reports.
 
@@ -196,15 +243,16 @@ nothing to set up.
 
 ### Is it safe to use?
 
-Read [Risks and limits](#risks-and-limits) first. In short: Anthropic's terms
-do not allow automated access like this, and your account could be
-restricted. TwinRails only talks to Claude (`claude.ai` or
+Read [Risks and limits](#risks-and-limits) first. In short: Anthropic does
+not allow third-party apps to use Claude sign-in credentials like this, and
+your account could be restricted. TwinRails only talks to Claude (`claude.ai` or
 `api.anthropic.com`) and to Antigravity on your own PC. There is no analytics
 or other network traffic.
 
 ### Which Windows versions does it run on?
 
-It is built and tested on Windows 11, and needs Python 3.10 or later.
+It is built and tested on Windows 11, 64-bit. Running from source needs
+Python 3.10 or later.
 
 ---
 
@@ -212,3 +260,6 @@ It is built and tested on Windows 11, and needs Python 3.10 or later.
 
 Developer notes live in [`docs/`](docs/README.md) — start there before
 changing any of the win32 code that puts the bar inside the taskbar.
+Changes between versions are in [CHANGELOG.md](CHANGELOG.md), and
+[SECURITY.md](SECURITY.md) covers what TwinRails does with your credentials
+and how to report a vulnerability privately.
