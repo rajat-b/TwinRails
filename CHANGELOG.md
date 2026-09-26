@@ -8,6 +8,9 @@
 - **Start automatically with Windows** works from the exe: the startup
   shortcut starts the exe itself.
 - `--version` prints the version and exits.
+- The bar fits taskbars thinner than 60px. At 100% scaling the second row's
+  bar and rail used to be cut off; the rows now give up padding, then a
+  little bar height, to fit. Larger scaling is unchanged.
 - The logo's empty rail is hollow, like the bars, and the taskbar mark takes
   the rows' light or dark theme colours instead of fixed dark greys.
 - The README's install steps come first, Risks and limits now covers

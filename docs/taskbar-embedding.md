@@ -242,6 +242,20 @@ This is also why all bar content is drawn on **one flat `tk.Canvas`** rather
 than a tree of nested frames and labels: a deep widget tree never renders once
 embedded, even when forced to repaint, while a shallow one does.
 
+## Fitting the taskbar's height
+
+A child window is clipped to its parent, and `_reposition_embedded()` pins a
+bar taller than the taskbar to its top edge. The two rows as designed need
+62px, which Windows 11's taskbar only has at 125% scaling and above (60px, the
+last 2px being padding). At 100% it is 48px, and the second row lost its bar
+and rail; Windows 10's is 40px.
+
+So before the canvas is built, `_calibrate_rows()` reads `Shell_TrayWnd`'s
+thickness and, only if the rows' drawing would be cut, trims padding and the
+row gap, then bar height (14px → 13 at 48px, 9 at 40px). It runs once, so a
+taskbar resized while TwinRails runs needs a restart. A 30px taskbar (Windows
+10's small buttons) is too thin for two rows at any bar height.
+
 ---
 
 ## Verifying a change

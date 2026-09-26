@@ -99,6 +99,9 @@ PACE_GAP = 8
 PACE_W = 120
 ROW_H = 26
 ROW_GAP = 2
+# The canvas's top and bottom padding. PAD stays the horizontal one; the two
+# were the same until _calibrate_rows() started trimming this one.
+PAD_Y = PAD
 COL_GAP = 14
 MAX_METRICS = 4
 ROWS_PER_COL = 2
@@ -336,6 +339,61 @@ RAIL_STOP_OVERHANG = 3
 SHELL_TRAY_CLASS = "Shell_TrayWnd"
 TRAY_NOTIFY_CLASS = "TrayNotifyWnd"
 EMBED_GAP = 4
+
+# The rows' vertical metrics as designed. _calibrate_rows() trims copies of
+# them when the taskbar is too thin to hold the design.
+_ROW_H_1X, _ROW_GAP_1X, _PAD_Y_1X, _BAR_HEIGHT_1X = ROW_H, ROW_GAP, PAD_Y, BAR_HEIGHT
+# Thinnest usage bar the rows shrink to. A taskbar too thin even for that
+# (Windows 10 with small taskbar buttons, 30px) still clips the second row.
+_MIN_BAR_HEIGHT = 6
+
+
+def _row_extent(bar_height: int) -> int:
+    """How tall one row's drawing is: the needle's overhang above the bar
+    (the `y0 + 2` in _build_bar_row), the bar, the time rail under it, and
+    the lockout stop cap, which hangs lowest. 25px at the designed 14px bar."""
+    return 2 + bar_height + RAIL_GAP + RAIL_HEIGHT + RAIL_STOP_OVERHANG
+
+
+def _taskbar_thickness() -> Optional[int]:
+    """The primary taskbar's height (its width when docked left or right), in
+    the physical pixels the canvas is drawn in, or None if there is none."""
+    try:
+        hwnd = ctypes.windll.user32.FindWindowW(SHELL_TRAY_CLASS, None)
+        rect = wintypes.RECT()
+        if not hwnd or not ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+            return None
+    except (AttributeError, OSError):
+        return None
+    return min(rect.right - rect.left, rect.bottom - rect.top) or None
+
+
+def _calibrate_rows(taskbar_h: Optional[int]) -> None:
+    """Fit both stacked rows inside a taskbar taskbar_h pixels thick.
+
+    As designed the canvas is 62px tall, and a canvas taller than the taskbar
+    is pinned to the taskbar's top edge (see _reposition_embedded), so
+    whatever hangs below is cut off. On Windows 11 at 125% (a 60px taskbar)
+    that is only bottom padding, and the layout is left exactly as designed.
+    At 100% (48px) it was the second row's bar and rail, and Windows 10's
+    40px taskbar lost more.
+
+    When the rows' drawing would be cut, space goes in order of how little it
+    shows: padding and the gap between rows first, then bar height, down to
+    _MIN_BAR_HEIGHT. The rail, needle and text keep their sizes, and the
+    block ends up centred. Runs once before the canvas is built, so a taskbar
+    resized while TwinRails runs keeps the old fit until it restarts.
+    Idempotent: it starts from the designed values every time."""
+    global ROW_H, ROW_GAP, PAD_Y, BAR_HEIGHT
+    ROW_H, ROW_GAP, PAD_Y, BAR_HEIGHT = _ROW_H_1X, _ROW_GAP_1X, _PAD_Y_1X, _BAR_HEIGHT_1X
+    if not taskbar_h:
+        return
+    if PAD_Y + ROW_H + ROW_GAP + _row_extent(BAR_HEIGHT) <= taskbar_h:
+        return
+    BAR_HEIGHT = max(_MIN_BAR_HEIGHT, min(_BAR_HEIGHT_1X, taskbar_h // 2 - _row_extent(0)))
+    ROW_H = _row_extent(BAR_HEIGHT)
+    ROW_GAP = min(_ROW_GAP_1X, max(0, taskbar_h - 2 * ROW_H))
+    PAD_Y = max(0, (taskbar_h - 2 * ROW_H - ROW_GAP) // 2)
 
 # Genuine SetParent-into-Shell_TrayWnd embedding is enabled. It looked
 # broken for a long stretch of this feature's development -- GetAncestor
@@ -1709,13 +1767,17 @@ class TaskbarBarWidget:
         # Icon first: the text calibration folds ICON_W into the canvas width.
         _calibrate_icon(self.window)
         _calibrate_text_slots(self.window)
+        # No border allowance: the 1px highlight below is dropped once the
+        # bar is embedded (see _apply_theme), and embedded is where the
+        # taskbar's thickness is the limit.
+        _calibrate_rows(_taskbar_thickness())
 
         # A single flat Canvas -- see the comment on CANVAS_CONTENT_W above
         # for why: this is the shallowest possible widget tree, which is
         # what actually renders once genuinely embedded as a child of
         # Shell_TrayWnd.
         self.canvas_w = PAD * 2 + CANVAS_CONTENT_W
-        self.canvas_h = PAD * 2 + ROW_H * 2 + ROW_GAP
+        self.canvas_h = PAD_Y * 2 + ROW_H * 2 + ROW_GAP
         self.canvas = tk.Canvas(
             self.window,
             width=self.canvas_w,
@@ -1840,7 +1902,7 @@ class TaskbarBarWidget:
         row_in_col = index % ROWS_PER_COL
         col0_x0 = PAD + ICON_W + ICON_GAP
         x0 = col0_x0 if col == 0 else (col0_x0 + ROW_CONTENT_W + COL_GAP)
-        y0 = PAD + row_in_col * (ROW_H + ROW_GAP)
+        y0 = PAD_Y + row_in_col * (ROW_H + ROW_GAP)
 
         # The usage bar no longer sits on the row's centre line: the bar and
         # the time rail under it form one block (14 + 3 + 3 = 20px) that has
@@ -2218,7 +2280,7 @@ class TaskbarBarWidget:
                 row_in_col = i % ROWS_PER_COL
                 col0_x0 = PAD + ICON_W + ICON_GAP
                 x0 = col0_x0 if col == 0 else (col0_x0 + col0_w + COL_GAP)
-                y0 = PAD + row_in_col * (ROW_H + ROW_GAP)
+                y0 = PAD_Y + row_in_col * (ROW_H + ROW_GAP)
                 bar_y0 = y0 + 2
                 bar_y1 = bar_y0 + BAR_HEIGHT
                 cy = bar_y0 + BAR_HEIGHT // 2
