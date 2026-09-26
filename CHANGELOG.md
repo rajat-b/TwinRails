@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 (unreleased)
+## 1.1.0 (2026-09-26)
 
 - Each release now includes `TwinRails.exe`, a single file that runs without
   Python, built by GitHub Actions with a SHA-256 checksum and a build
@@ -8,8 +8,9 @@
 - **Start automatically with Windows** works from the exe: the startup
   shortcut starts the exe itself.
 - `--version` prints the version and exits.
-- The README's install steps come first, and Risks and limits now covers
-  Anthropic's policy on OAuth sign-in and session tokens.
+- The README's install steps come first, Risks and limits now covers
+  Anthropic's policy on OAuth sign-in and session tokens, and a Maintenance
+  section says what to expect from issues.
 - Added SECURITY.md, a bug report form, and CI that runs the tests on Windows.
 
 ## 1.0.0 (2026-09-25)

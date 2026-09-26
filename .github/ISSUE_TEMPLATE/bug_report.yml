@@ -5,6 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
+        TwinRails is a side project maintained as time allows, so a reply may take a while or not come at all.
+
         **Never paste your Claude `sessionKey`, the contents of `.credentials.json`, or any other token.** Nothing here needs them.
         Security problems go through the Security tab instead: see SECURITY.md.
   - type: textarea
