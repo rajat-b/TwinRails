@@ -109,6 +109,13 @@ Anthropic says it may enforce these restrictions without prior notice. Your acco
 
 **Not affiliated with, endorsed by, or sponsored by Anthropic or Google.**
 
+## Maintenance
+
+TwinRails is a side project I built for my own use and share as is. I fix
+things when I have time, so issues may wait a while or go unanswered, and
+there are no timelines. Bug reports with the form filled in are welcome, and
+pull requests even more so.
+
 ## Screenshots
 
 These show live usage. The Settings image shows one person's choices.
