@@ -1419,6 +1419,13 @@ class TaskbarBarWidget:
             return
         coral = CLAUDE_CORAL_HOVER if self._icon_hovered else CLAUDE_CORAL
         time_fill = self._text_primary if self._icon_hovered else self._text_secondary
+        if hasattr(self, "icon_top_track"):
+            # The quota rail is hollow where the bars are (track_color is the
+            # colorkey in transparent mode) and the time rail's unfilled part
+            # is the rows' rail_track_item colour; see _apply_theme.
+            self.canvas.itemconfigure(self.icon_top_track, fill=self._track_color,
+                                      outline=self._track_outline)
+            self.canvas.itemconfigure(self.icon_bot_track, fill=self._track_outline)
         if hasattr(self, "icon_top_fill"):
             self.canvas.itemconfigure(self.icon_top_fill, fill=coral)
         if hasattr(self, "icon_bot_fill"):
@@ -1750,9 +1757,14 @@ class TaskbarBarWidget:
         # "two rails, not one" architecture inside the octagonal countdown perimeter.
         # Top Rail (Quota track + Claude Coral fill)
         # Offsets are the 1x design, scaled by _mark() -- see _calibrate_icon.
+        # The two tracks take the rows' own theme colours (set in
+        # _update_icon), so the mark's empty parts look like the bars' empty
+        # parts. They were fixed dark greys copied from the tray icon: fine
+        # on a dark taskbar, but a solid black box on a light one, and there
+        # the time rail's track matched its elapsed part exactly.
         self.icon_top_track = self.canvas.create_rectangle(
             icon_cx - _mark(8), icon_cy - _mark(5.5), icon_cx + _mark(8), icon_cy - _mark(1.5),
-            fill="#1E1E1E", outline="#57514C", width=1
+            fill=self._track_color, outline=self._track_outline, width=1
         )
         self.icon_top_fill = self.canvas.create_rectangle(
             icon_cx - _mark(8), icon_cy - _mark(5.5), icon_cx, icon_cy - _mark(1.5),
@@ -1761,7 +1773,7 @@ class TaskbarBarWidget:
         # Bottom Rail (Time track + Elapsed Gray + Danger Red tail)
         self.icon_bot_track = self.canvas.create_rectangle(
             icon_cx - _mark(8), icon_cy + _mark(1.5), icon_cx + _mark(8), icon_cy + _mark(4),
-            fill="#3B3835", outline="", width=0
+            fill=self._track_outline, outline="", width=0
         )
         self.icon_bot_fill = self.canvas.create_rectangle(
             icon_cx - _mark(8), icon_cy + _mark(1.5), icon_cx, icon_cy + _mark(4),
