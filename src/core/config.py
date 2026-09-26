@@ -200,16 +200,23 @@ class ConfigManager:
             shortcut_path = startup_dir / "TwinRails.lnk"
             old_shortcuts = [startup_dir / name for name in ("AISessionLimitsWidget.lnk", "ClaudeTaskbarWidget.lnk")]
 
-            vbs_launcher = Path(__file__).resolve().parent.parent.parent / "run_silent.vbs"
-
             if enable:
-                target = str(vbs_launcher.resolve())
-                work_dir = str(vbs_launcher.parent.resolve())
+                if getattr(sys, "frozen", False):
+                    # Packaged TwinRails.exe. __file__ points into the
+                    # bundle's temporary extraction folder, which is deleted
+                    # on exit, so the shortcut starts the exe itself.
+                    exe = Path(sys.executable).resolve()
+                    target_path, arguments, work_dir = str(exe), "--bar", str(exe.parent)
+                else:
+                    vbs_launcher = (Path(__file__).resolve().parent.parent.parent / "run_silent.vbs").resolve()
+                    target_path = "wscript.exe"
+                    arguments = f'\"\"\"{vbs_launcher}\"\"\"'
+                    work_dir = str(vbs_launcher.parent)
                 ps_script = f"""
                 $ws = New-Object -ComObject WScript.Shell;
                 $s = $ws.CreateShortcut('{str(shortcut_path)}');
-                $s.TargetPath = 'wscript.exe';
-                $s.Arguments = '\"\"\"{target}\"\"\"';
+                $s.TargetPath = '{target_path}';
+                $s.Arguments = '{arguments}';
                 $s.WorkingDirectory = '{work_dir}';
                 $s.Save();
                 """

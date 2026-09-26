@@ -1,0 +1,58 @@
+name: Bug report
+description: Something in TwinRails is broken or looks wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste your Claude `sessionKey`, the contents of `.credentials.json`, or any other token.** Nothing here needs them.
+        Security problems go through the Security tab instead: see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: A screenshot of the bar or flyout helps a lot. Crop out anything personal.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: TwinRails version
+      description: The release you downloaded, or the output of `python main.py --version` when running from source.
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run it?
+      options:
+        - TwinRails.exe from a release
+        - From source (start_widget.bat / run_silent.vbs)
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Which provider is affected?
+      options:
+        - Claude, via Claude Code sign-in
+        - Claude, via session cookie
+        - Antigravity (Gemini)
+        - The bar or flyout itself, whatever the provider
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Press Win+R, run `winver`, and copy the version and build.
+      placeholder: "Windows 11 24H2 (OS Build 26100.4652)"
+    validations:
+      required: true
+  - type: textarea
+    id: debug-log
+    attributes:
+      label: Debug log (optional)
+      description: If `%USERPROFILE%\.ai_session_limits\usage_response_debug.log` exists, paste it here. It holds key names and value types only, never values.
+      render: json
