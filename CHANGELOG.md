@@ -8,6 +8,8 @@
 - **Start automatically with Windows** works from the exe: the startup
   shortcut starts the exe itself.
 - `--version` prints the version and exits.
+- The logo's empty rail is hollow, like the bars, and the taskbar mark takes
+  the rows' light or dark theme colours instead of fixed dark greys.
 - The README's install steps come first, Risks and limits now covers
   Anthropic's policy on OAuth sign-in and session tokens, and a Maintenance
   section says what to expect from issues.
