@@ -247,8 +247,9 @@ embedded, even when forced to repaint, while a shallow one does.
 A child window is clipped to its parent, and `_reposition_embedded()` pins a
 bar taller than the taskbar to its top edge. The two rows as designed need
 62px, which Windows 11's taskbar only has at 125% scaling and above (60px, the
-last 2px being padding). At 100% it is 48px, and the second row lost its bar
-and rail; Windows 10's is 40px.
+last 2px being padding). At 100% it is 48px, and the second row lost its time
+rail, lockout tail included; Windows 10's is 40px, which cut its bar in half
+too.
 
 So before the canvas is built, `_calibrate_rows()` reads `Shell_TrayWnd`'s
 thickness and, only if the rows' drawing would be cut, trims padding and the

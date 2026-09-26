@@ -375,8 +375,8 @@ def _calibrate_rows(taskbar_h: Optional[int]) -> None:
     is pinned to the taskbar's top edge (see _reposition_embedded), so
     whatever hangs below is cut off. On Windows 11 at 125% (a 60px taskbar)
     that is only bottom padding, and the layout is left exactly as designed.
-    At 100% (48px) it was the second row's bar and rail, and Windows 10's
-    40px taskbar lost more.
+    At 100% (48px) it was the second row's time rail, lockout tail included,
+    and Windows 10's 40px taskbar lost half of that row's bar as well.
 
     When the rows' drawing would be cut, space goes in order of how little it
     shows: padding and the gap between rows first, then bar height, down to
