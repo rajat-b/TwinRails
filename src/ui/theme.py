@@ -1,4 +1,4 @@
-﻿"""
+"""
 Design system and color palette for TwinRails.
 Covers Claude and Google Antigravity / Gemini.
 """
@@ -17,6 +17,12 @@ GEMINI_BLUE_HOVER = "#4285F4"   # Lighter Google Blue
 GEMINI_BLUE_ACTIVE = "#6BA4F8"  # Active/pressed state
 GEMINI_PURPLE = "#7C3AED"       # Gemini gradient purple
 GEMINI_TEAL = "#06B6D4"         # Tertiary accent
+
+# ChatGPT (OpenAI) Brand Colors
+CHATGPT_GREEN = "#10A37F"        # Authentic ChatGPT / OpenAI Emerald Green
+CHATGPT_GREEN_HOVER = "#1A7F64"  # Darker hover state
+CHATGPT_GREEN_ACTIVE = "#25C298" # Active/pressed state
+CHATGPT_SYMBOL = "֍"             # Swirling rosette logo symbol (U+058D)
 
 # Claude's weekly usage by product -- the flyout's stacked bar. Keyed by the
 # API's stable product id, so a product keeps its colour whatever its rank.

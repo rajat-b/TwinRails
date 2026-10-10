@@ -4,9 +4,9 @@
 
 <h1 align="center">TwinRails</h1>
 
-<p align="center"><strong>Claude and Gemini usage limits in your Windows taskbar, with a forecast of when you'll run out.</strong></p>
+<p align="center"><strong>Claude, Gemini, and ChatGPT usage limits in your Windows taskbar, with a forecast of when you'll run out.</strong></p>
 
-TwinRails is a small Windows widget that lives inside the taskbar and tracks your AI usage limits: Claude's 5-hour session limit, weekly limit and per-model limits (Claude.ai and Claude Code share them), and Gemini's limits in Google Antigravity. Instead of just a percentage, it projects your current pace forward and shows the exact time you would run out, before it happens.
+TwinRails is a small Windows widget that lives inside the taskbar and tracks your AI usage limits: Claude's 5-hour session limit, weekly limit and per-model limits (Claude.ai and Claude Code share them), Gemini's limits in Google Antigravity, and ChatGPT's 5-hour session and weekly limits (ChatGPT Plus/Pro and Codex). Instead of just a percentage, it projects your current pace forward and shows the exact time you would run out, before it happens.
 
 ![TwinRails in the Windows taskbar showing Claude's 5-hour and weekly limits, with the weekly limit on pace to run out days before it resets](docs/screenshots/taskbar-bar.png)
 
@@ -50,7 +50,7 @@ in Settings.
 
 This is an independent hobby project, and it is provided at your own risk. The Claude integration reads an undocumented usage endpoint. Its cookie fallback asks you to paste a full `sessionKey` login credential from Claude.ai; the widget encrypts that value with Windows DPAPI, but you are still handing a third-party program a credential. Anthropic's [Consumer Terms of Service](https://www.anthropic.com/legal/consumer-terms) prohibit accessing its consumer services through automated or non-human means except through an Anthropic API key, and also prohibit scraping and bypassing protective measures. Your account could be restricted, and the endpoint or integration can stop working without notice.
 
-**Not affiliated with, endorsed by, or sponsored by Anthropic or Google.**
+**Not affiliated with, endorsed by, or sponsored by Anthropic, Google, or OpenAI.**
 
 ## Screenshots
 
@@ -101,6 +101,7 @@ are looking at fresh numbers. Click the logo to refresh straight away.
 
 - **Claude**: Session limits (5h), weekly quotas (7d), each reported per-model limit (such as Fable, Opus, or Sonnet), and usage credits when a spending cap and amount used are available. The flyout also shows extra usage status and Claude's labeled weekly breakdown when returned.
 - **Google Antigravity (`Gemini & 3P`)**: Local zero-configuration loopback engine tracking Gemini 5-hour sprint limits, weekly quotas, and third-party Claude/GPT limits in Antigravity.
+- **ChatGPT (chatgpt.com / Codex)**: 5-hour session limits, weekly limits, and feature/model rate limits. Auto-discovers local Codex CLI sign-in (`~/.codex/auth.json`) with DPAPI-encrypted token fallback.
 
 ---
 
@@ -113,6 +114,7 @@ are looking at fresh numbers. Click the logo to refresh straight away.
   - Displays up to 4 metrics of your choice (more than 2 adds a second column), each marked with its provider:
     - `[ ✱ 5H: 45% · 4:12p (1h 28m) · →40% ]`
     - `[ ✦ 5H: 14% · 6:34p (3h 50m) · →5:02p (1h 18m) ]`
+    - `[ ֍ 5H: 60% · 4:07a (4h 49m) · →11:23p (5m) ]`
   - Each row draws two tracks: the bar itself is **quota** (how much you have
     spent, with the right-hand edge as the only limit), and a slim **time rail**
     beneath it is the **reset window** — how much of it has passed, and, in red,
@@ -124,7 +126,7 @@ are looking at fresh numbers. Click the logo to refresh straight away.
     after it: when the window resets, and where your current pace lands you —
     `→8:15p (1h 19m)` in red when you are on track to run out before the reset,
     `→40%` otherwise.
-  - Pacing color transition: Signature brand colors (`#D97756` Claude Coral, `#1A73E8` Gemini Blue) → Warning Amber (`#F59E0B`) → Danger Red (`#EF4444`).
+  - Pacing color transition: Signature brand colors (`#D97756` Claude Coral, `#1A73E8` Gemini Blue, `#10A37F` ChatGPT Green) → Warning Amber (`#F59E0B`) → Danger Red (`#EF4444`).
 - **Left Twin Rails Button**:
   - Single-click immediate refresh across all enabled providers, styled with the widget's signature colored Twin Rails mark (Claude Coral quota bar, time rail with danger lockout tail, and synchronized white needle).
   - The mark's needle doubles as a refresh countdown: solid when data has just

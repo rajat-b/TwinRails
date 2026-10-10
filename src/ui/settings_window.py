@@ -12,7 +12,7 @@ from typing import Callable, Optional, Union, List
 from .theme import (
     BG_MAIN, BG_CARD, BG_HOVER, BORDER_CARD,
     TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
-    CLAUDE_CORAL, GEMINI_BLUE, WARNING_AMBER, SUCCESS_GREEN, FONT_FAMILY,
+    CLAUDE_CORAL, GEMINI_BLUE, CHATGPT_GREEN, WARNING_AMBER, SUCCESS_GREEN, FONT_FAMILY,
     FONT_SIZE_CAPTION, FONT_SIZE_BODY, FONT_SIZE_HEADING
 )
 from .dpi import get_work_area_for_point_or_window, get_dpi_scale_for_window
@@ -24,6 +24,9 @@ from ..core.claude_client import ClaudeClient
 from ..core.claude_oauth import (
     ClaudeTokenExpired, ClaudeTokenReadError, ClaudeTokenUnavailable, read_claude_code_token,
 )
+from ..core.chatgpt_auth import (
+    ChatGPTTokenExpired, ChatGPTTokenReadError, ChatGPTTokenUnavailable, read_codex_token,
+)
 from ..core.models import UnifiedUsageState, ClaudeUsageState
 
 MAX_WIDGET_METRICS = 4
@@ -31,23 +34,32 @@ MAX_WIDGET_METRICS = 4
 _DEFAULT_CHOICES = [
     ("claude_five_hour", "✱ Claude · Session Limit (5h)"),
     ("gemini_5h", "✦ Gemini · 5-Hour Limit (5h)"),
+    ("chatgpt_five_hour", "֍ ChatGPT · 5-Hour Limit (5h)"),
     ("claude_seven_day", "✱ Claude · Weekly · All Models (7d)"),
     ("gemini_weekly", "✦ Gemini · Weekly Limit (7d)"),
+    ("chatgpt_weekly", "֍ ChatGPT · Weekly Limit (7d)"),
     ("3p_5h", "✦ Claude & GPT · 5-Hour (Antigravity)"),
     ("usage_credits", "✱ Claude · Usage Credits ($)")
 ]
 
 
 def _metric_choices(current_state, saved_keys) -> list[tuple[str, str]]:
-    """Offer every reported Claude model limit and keep saved ones through an offline refresh."""
+    """Offer reported Claude and ChatGPT limits and keep saved ones through an offline refresh."""
     choices = list(_DEFAULT_CHOICES)
     seen = {key for key, _ in choices}
     if current_state is not None:
         for metric in current_state.all_metrics:
-            if metric.provider_id != "claude" or metric.key in seen:
+            if metric.key in seen:
                 continue
-            choices.append((metric.key, f"✱ Claude · {metric.label}"))
-            seen.add(metric.key)
+            if metric.provider_id == "claude":
+                choices.append((metric.key, f"✱ Claude · {metric.label}"))
+                seen.add(metric.key)
+            elif metric.provider_id == "chatgpt":
+                choices.append((metric.key, f"֍ ChatGPT · {metric.label}"))
+                seen.add(metric.key)
+            elif metric.provider_id == "antigravity":
+                choices.append((metric.key, f"✦ Gemini · {metric.label}"))
+                seen.add(metric.key)
 
     for key in saved_keys:
         if key in seen:
@@ -61,6 +73,9 @@ def _metric_choices(current_state, saved_keys) -> list[tuple[str, str]]:
             label = "✱ Claude · Cloud Session Credits (unavailable now)"
         elif key.startswith("included_credit_"):
             label = "✱ Claude · Included Credit (unavailable now)"
+        elif key.startswith("chatgpt_"):
+            name = key[len("chatgpt_"):].replace("_", " ").title()
+            label = f"֍ ChatGPT · {name} (unavailable now)"
         else:
             label = f"Saved metric · {key} (unavailable now)"
         choices.append((key, label))
@@ -112,6 +127,7 @@ class SettingsWindow:
         self.window.minsize(round(480 * scale), round(620 * scale))
 
         self._show_key = False
+        self._show_chatgpt_token = False
         self._build_ui()
 
     def _center_window(self):
@@ -231,9 +247,11 @@ class SettingsWindow:
 
         self.prov_claude_var = tk.BooleanVar(value=("claude" in self.cfg_mgr.config.enabled_providers))
         self.prov_antigravity_var = tk.BooleanVar(value=("antigravity" in self.cfg_mgr.config.enabled_providers))
+        self.prov_chatgpt_var = tk.BooleanVar(value=("chatgpt" in self.cfg_mgr.config.enabled_providers))
 
         tk.Checkbutton(prov_box, text="✱  Claude (claude.ai)", variable=self.prov_claude_var, font=(FONT_FAMILY, FONT_SIZE_BODY, "bold"), fg=CLAUDE_CORAL, bg=BG_CARD, selectcolor=BG_MAIN).pack(anchor="w", pady=2)
         tk.Checkbutton(prov_box, text="✦  Google Antigravity (Gemini & 3P)", variable=self.prov_antigravity_var, font=(FONT_FAMILY, FONT_SIZE_BODY, "bold"), fg=GEMINI_BLUE, bg=BG_CARD, selectcolor=BG_MAIN).pack(anchor="w", pady=2)
+        tk.Checkbutton(prov_box, text="֍  ChatGPT (chatgpt.com / Codex)", variable=self.prov_chatgpt_var, font=(FONT_FAMILY, FONT_SIZE_BODY, "bold"), fg=CHATGPT_GREEN, bg=BG_CARD, selectcolor=BG_MAIN).pack(anchor="w", pady=2)
 
         # --- Section: Claude Credentials ---
         tk.Label(scroll_content, text="Claude Credentials", font=(FONT_FAMILY, FONT_SIZE_HEADING, "bold"), fg=TEXT_PRIMARY, bg=BG_MAIN).pack(anchor="w", pady=(0, 4))
@@ -389,6 +407,154 @@ class SettingsWindow:
         )
         ag_help.pack(fill=tk.X, pady=(2, 0))
         wrap_to_width(ag_help)
+
+        # --- Section: ChatGPT Credentials ---
+        tk.Label(scroll_content, text="ChatGPT Credentials", font=(FONT_FAMILY, FONT_SIZE_HEADING, "bold"), fg=TEXT_PRIMARY, bg=BG_MAIN).pack(anchor="w", pady=(0, 4))
+        chatgpt_box = tk.Frame(scroll_content, bg=BG_CARD, padx=14, pady=12, highlightthickness=1, highlightbackground=BORDER_CARD)
+        chatgpt_box.pack(fill=tk.X, pady=(0, 16))
+
+        self.chatgpt_auth_mode_var = tk.StringVar(value=getattr(self.cfg_mgr.config, "chatgpt_auth_mode", "auto"))
+        for value, label in (
+            ("auto", "Automatic: Codex CLI sign-in, then access token fallback"),
+            ("codex", "Codex CLI sign-in only"),
+            ("token", "Access token only"),
+        ):
+            tk.Radiobutton(
+                chatgpt_box, text=label, variable=self.chatgpt_auth_mode_var, value=value,
+                font=(FONT_FAMILY, FONT_SIZE_BODY), fg=TEXT_PRIMARY, bg=BG_CARD,
+                selectcolor=BG_MAIN, anchor="w", command=self._update_chatgpt_auth_help
+            ).pack(anchor="w", pady=1)
+
+        self.chatgpt_auth_help = tk.Label(
+            chatgpt_box, text="", font=(FONT_FAMILY, FONT_SIZE_CAPTION), fg=TEXT_MUTED,
+            bg=BG_CARD, wraplength=420, justify="left", anchor="w"
+        )
+        self.chatgpt_auth_help.pack(fill=tk.X, pady=(4, 0))
+        wrap_to_width(self.chatgpt_auth_help)
+        self._update_chatgpt_auth_help()
+
+        try:
+            read_codex_token()
+            codex_status = "🟢 Codex CLI sign-in detected (~/.codex/auth.json)."
+            codex_fg = SUCCESS_GREEN
+        except ChatGPTTokenExpired:
+            codex_status = "🟡 Codex CLI token is expired. Run 'codex' to refresh."
+            codex_fg = WARNING_AMBER
+        except ChatGPTTokenUnavailable:
+            codex_status = "⚪ No Codex CLI sign-in found on this machine."
+            codex_fg = TEXT_MUTED
+        except Exception:
+            codex_status = "⚪ Codex CLI credentials could not be read."
+            codex_fg = TEXT_MUTED
+
+        tk.Label(
+            chatgpt_box, text=codex_status, font=(FONT_FAMILY, FONT_SIZE_CAPTION),
+            fg=codex_fg, bg=BG_CARD
+        ).pack(anchor="w", pady=(4, 8))
+
+        self.chatgpt_token_label = tk.Label(
+            chatgpt_box, text="Access token (optional fallback):",
+            font=(FONT_FAMILY, FONT_SIZE_BODY), fg=TEXT_SECONDARY, bg=BG_CARD
+        )
+        self.chatgpt_token_label.pack(anchor="w")
+
+        chatgpt_help = tk.Label(
+            chatgpt_box,
+            text="Paste a ChatGPT access token (from chatgpt.com/api/auth/session or ~/.codex/auth.json). "
+                 "Stored securely with Windows DPAPI encryption.",
+            font=(FONT_FAMILY, FONT_SIZE_CAPTION), fg=TEXT_MUTED, bg=BG_CARD,
+            wraplength=420, justify="left", anchor="w"
+        )
+        chatgpt_help.pack(fill=tk.X, pady=(2, 4))
+        wrap_to_width(chatgpt_help)
+        self.chatgpt_auth_mode_var.trace_add("write", self._on_chatgpt_auth_mode_changed)
+        self._on_chatgpt_auth_mode_changed()
+
+        chatgpt_token_row = tk.Frame(chatgpt_box, bg=BG_CARD)
+        chatgpt_token_row.pack(fill=tk.X, pady=(4, 6))
+
+        self.chatgpt_token_var = tk.StringVar(value=getattr(self.cfg_mgr.config, "chatgpt_token", ""))
+        self.chatgpt_token_entry = tk.Entry(
+            chatgpt_token_row,
+            textvariable=self.chatgpt_token_var,
+            font=(FONT_FAMILY, FONT_SIZE_BODY),
+            bg="#141312",
+            fg=TEXT_PRIMARY,
+            insertbackground=TEXT_PRIMARY,
+            relief=tk.FLAT,
+            show="●",
+            highlightthickness=1,
+            highlightbackground=BORDER_CARD
+        )
+        self.chatgpt_token_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4, padx=(0, 6))
+
+        self.chatgpt_eye_btn = tk.Button(
+            chatgpt_token_row,
+            text="👁",
+            font=(FONT_FAMILY, FONT_SIZE_BODY),
+            bg=BG_CARD,
+            fg=TEXT_SECONDARY,
+            relief=tk.FLAT,
+            padx=6,
+            command=self._toggle_chatgpt_eye
+        )
+        self.chatgpt_eye_btn.pack(side=tk.LEFT, padx=(0, 4))
+
+        chatgpt_paste_btn = tk.Button(
+            chatgpt_token_row,
+            text="Paste",
+            font=(FONT_FAMILY, FONT_SIZE_BODY),
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            relief=tk.FLAT,
+            padx=8,
+            command=self._paste_chatgpt_token
+        )
+        chatgpt_paste_btn.pack(side=tk.LEFT)
+
+        # Optional Account ID row
+        acc_row = tk.Frame(chatgpt_box, bg=BG_CARD)
+        acc_row.pack(fill=tk.X, pady=(2, 6))
+        tk.Label(
+            acc_row, text="Account ID (optional):",
+            font=(FONT_FAMILY, FONT_SIZE_CAPTION), fg=TEXT_MUTED, bg=BG_CARD
+        ).pack(side=tk.LEFT, padx=(0, 8))
+        self.chatgpt_account_id_var = tk.StringVar(value=getattr(self.cfg_mgr.config, "chatgpt_account_id", ""))
+        tk.Entry(
+            acc_row,
+            textvariable=self.chatgpt_account_id_var,
+            font=(FONT_FAMILY, FONT_SIZE_CAPTION),
+            bg="#141312",
+            fg=TEXT_PRIMARY,
+            insertbackground=TEXT_PRIMARY,
+            relief=tk.FLAT,
+            highlightthickness=1,
+            highlightbackground=BORDER_CARD
+        ).pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=2)
+
+        # Test Connection button for ChatGPT
+        chatgpt_test_row = tk.Frame(chatgpt_box, bg=BG_CARD)
+        chatgpt_test_row.pack(fill=tk.X, pady=(4, 0))
+
+        self.chatgpt_test_btn = tk.Button(
+            chatgpt_test_row,
+            text="Test ChatGPT Connection",
+            font=(FONT_FAMILY, FONT_SIZE_CAPTION),
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            relief=tk.FLAT,
+            padx=10,
+            pady=3,
+            command=self._test_chatgpt_connection
+        )
+        self.chatgpt_test_btn.pack(side=tk.LEFT)
+
+        self.chatgpt_test_status_lbl = tk.Label(
+            chatgpt_test_row, text="", font=(FONT_FAMILY, FONT_SIZE_CAPTION), fg=TEXT_MUTED,
+            bg=BG_CARD, wraplength=260, justify="left", anchor="w"
+        )
+        self.chatgpt_test_status_lbl.pack(side=tk.LEFT, padx=(8, 0), fill=tk.X, expand=True)
+        wrap_to_width(self.chatgpt_test_status_lbl)
 
         # --- Section: Taskbar & Flyout Metrics Display ---
         tk.Label(scroll_content, text="Taskbar & Flyout Metrics Display", font=(FONT_FAMILY, FONT_SIZE_HEADING, "bold"), fg=TEXT_PRIMARY, bg=BG_MAIN).pack(anchor="w", pady=(0, 4))
@@ -618,9 +784,22 @@ class SettingsWindow:
                    "login credential.", TEXT_MUTED),
     }
 
+    _CHATGPT_AUTH_HELP = {
+        "auto": ("Best default: uses active Codex CLI sign-in when present (~/.codex/auth.json), "
+                 "and falls back to the access token below if signed out.", TEXT_MUTED),
+        "codex": ("Codex CLI only: reads credentials from ~/.codex/auth.json. No token needs "
+                  "to be pasted, but requires Codex CLI to remain signed in.", TEXT_MUTED),
+        "token": ("Access token only: queries ChatGPT using the pasted token below. Useful if you "
+                  "do not use the Codex CLI on this PC.", TEXT_MUTED),
+    }
+
     def _update_auth_help(self):
         text, color = self._AUTH_HELP.get(self.auth_mode_var.get(), ("", TEXT_MUTED))
         self.auth_help.configure(text=text, fg=color)
+
+    def _update_chatgpt_auth_help(self):
+        text, color = self._CHATGPT_AUTH_HELP.get(self.chatgpt_auth_mode_var.get(), ("", TEXT_MUTED))
+        self.chatgpt_auth_help.configure(text=text, fg=color)
 
     def _update_panel_colors_visibility(self):
         # after= keeps the colors directly under the checkbox; a bare pack()
@@ -728,6 +907,64 @@ class SettingsWindow:
                 def _err():
                     self.test_btn.configure(state=tk.NORMAL)
                     self.test_status_lbl.configure(text="Unexpected connection test error.", fg=WARNING_AMBER)
+                self.window.after(0, _err)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_chatgpt_auth_mode_changed(self, *_args):
+        mode = self.chatgpt_auth_mode_var.get()
+        if mode == "token":
+            label = "Access token (required for token mode):"
+        elif mode == "codex":
+            label = "Access token (unused in Codex CLI mode):"
+        else:
+            label = "Access token (optional fallback):"
+        self.chatgpt_token_label.configure(text=label)
+
+    def _toggle_chatgpt_eye(self):
+        self._show_chatgpt_token = not getattr(self, "_show_chatgpt_token", False)
+        self.chatgpt_token_entry.configure(show="" if self._show_chatgpt_token else "●")
+
+    def _paste_chatgpt_token(self):
+        try:
+            val = self.window.clipboard_get()
+            self.chatgpt_token_var.set(val.strip().strip("\"' \t\r\n"))
+        except Exception:
+            pass
+
+    def _test_chatgpt_connection(self):
+        token = self.chatgpt_token_var.get().strip()
+        account_id = self.chatgpt_account_id_var.get().strip()
+        mode = self.chatgpt_auth_mode_var.get()
+        if mode == "token" and not token:
+            self.chatgpt_test_status_lbl.configure(text="Please enter an access token first", fg=WARNING_AMBER)
+            return
+
+        self.chatgpt_test_btn.configure(state=tk.DISABLED)
+        self.chatgpt_test_status_lbl.configure(text="Connecting...", fg=TEXT_MUTED)
+
+        def _worker():
+            try:
+                from ..providers.chatgpt import ChatGPTProvider
+                provider = ChatGPTProvider(token=token, account_id=account_id, auth_mode=mode)
+                state = provider.fetch_usage(demo_mode=False)
+                def _done():
+                    self.chatgpt_test_btn.configure(state=tk.NORMAL)
+                    if not state.is_connected:
+                        self.chatgpt_test_status_lbl.configure(
+                            text=f"Failed: {state.error_message or state.status_message}",
+                            fg=WARNING_AMBER
+                        )
+                    else:
+                        self.chatgpt_test_status_lbl.configure(
+                            text=f"✓ Connected successfully! ({state.status_message})",
+                            fg=SUCCESS_GREEN
+                        )
+                self.window.after(0, _done)
+            except Exception as e:
+                def _err():
+                    self.chatgpt_test_btn.configure(state=tk.NORMAL)
+                    self.chatgpt_test_status_lbl.configure(text=f"Unexpected error: {e}", fg=WARNING_AMBER)
                 self.window.after(0, _err)
 
         threading.Thread(target=_worker, daemon=True).start()
@@ -841,8 +1078,10 @@ class SettingsWindow:
             enabled_provs.append("claude")
         if self.prov_antigravity_var.get():
             enabled_provs.append("antigravity")
+        if self.prov_chatgpt_var.get():
+            enabled_provs.append("chatgpt")
         if not enabled_provs:
-            enabled_provs = ["claude", "antigravity"]
+            enabled_provs = ["claude", "antigravity", "chatgpt"]
 
         selected_taskbar = [
             k for k in self._metric_order
@@ -864,6 +1103,9 @@ class SettingsWindow:
         cfg.enabled_providers = enabled_provs
         cfg.claude_auth_mode = self.auth_mode_var.get()
         cfg.session_key = self.key_var.get().strip()
+        cfg.chatgpt_auth_mode = self.chatgpt_auth_mode_var.get()
+        cfg.chatgpt_token = self.chatgpt_token_var.get().strip()
+        cfg.chatgpt_account_id = self.chatgpt_account_id_var.get().strip()
         cfg.widget_metric_keys = selected_taskbar[:MAX_WIDGET_METRICS]
         cfg.compact_metric_keys = selected_compact
         cfg.flyout_only_metric_keys = selected_flyout_only

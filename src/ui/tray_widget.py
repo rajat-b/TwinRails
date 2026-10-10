@@ -1,4 +1,4 @@
-﻿"""
+"""
 System Tray manager using pystray for the Windows Taskbar Notification Area.
 Renders real-time percentage icons, countdown tooltips, and context menus for all AI providers.
 """
@@ -138,6 +138,10 @@ class TrayWidget:
             pystray.MenuItem(
                 "Open Antigravity IDE",
                 lambda icon, item: self._open_antigravity()
+            ),
+            pystray.MenuItem(
+                "Open ChatGPT",
+                lambda icon, item: webbrowser.open("https://chatgpt.com")
             ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(

@@ -23,10 +23,13 @@ LEGACY_CONFIG_FILE = Path.home() / ".claude_taskbar_widget" / "config.json"
 
 @dataclass
 class WidgetConfig:
-    enabled_providers: List[str] = field(default_factory=lambda: ["claude", "antigravity"])
+    enabled_providers: List[str] = field(default_factory=lambda: ["claude", "antigravity", "chatgpt"])
     claude_auth_mode: str = "auto"  # "auto" | "oauth" | "cookie"
     claude_session_key_enc: str = ""
     claude_org_id: str = ""
+    chatgpt_auth_mode: str = "auto"  # "auto" | "codex" | "token"
+    chatgpt_token_enc: str = ""
+    chatgpt_account_id: str = ""
     poll_interval_seconds: int = 300
     # New installs already use the five-minute default. Old config files lack
     # this marker and are upgraded once in load(); later user choices are kept.
@@ -112,6 +115,23 @@ class WidgetConfig:
     def org_id(self, value: str):
         self.claude_org_id = value
 
+    @property
+    def chatgpt_token(self) -> str:
+        if not self.chatgpt_token_enc:
+            return ""
+        try:
+            return unprotect_data(self.chatgpt_token_enc)
+        except Exception as e:
+            print(f"[Config] Could not decrypt stored ChatGPT token: {e}")
+            return ""
+
+    @chatgpt_token.setter
+    def chatgpt_token(self, value: str):
+        if not value:
+            self.chatgpt_token_enc = ""
+        else:
+            self.chatgpt_token_enc = protect_data(value)
+
 
 class ConfigManager:
     def __init__(self):
@@ -160,9 +180,12 @@ class ConfigManager:
                 data["claude_org_id"] = data["org_id"]
 
             cfg = WidgetConfig(**{k: v for k, v in data.items() if k in WidgetConfig.__annotations__})
-            # Ensure both claude and antigravity are enabled by default
+            # Ensure claude, antigravity, and chatgpt are enabled by default
             if not cfg.enabled_providers:
-                cfg.enabled_providers = ["claude", "antigravity"]
+                cfg.enabled_providers = ["claude", "antigravity", "chatgpt"]
+            elif "chatgpt_token_enc" not in data and "chatgpt" not in cfg.enabled_providers:
+                # Upgrade path: add chatgpt to enabled providers for existing configs
+                cfg.enabled_providers.append("chatgpt")
 
             # Older saves spell out the 60s default, so a changed dataclass
             # default alone cannot reach them. Treat the removed 30s option
