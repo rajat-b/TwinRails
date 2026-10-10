@@ -1,4 +1,4 @@
-﻿"""
+"""
 Provider Manager coordinates polling across all registered and enabled AI providers.
 """
 
@@ -8,6 +8,7 @@ from typing import Dict, Optional, List
 from .base import BaseProvider
 from .claude import ClaudeProvider
 from .antigravity import AntigravityProvider
+from .chatgpt import ChatGPTProvider
 from ..core.models import UnifiedUsageState, ProviderUsageState, ClaudeUsageState
 from ..core.config import WidgetConfig
 
@@ -22,6 +23,11 @@ class ProviderManager:
                 auth_mode=config.claude_auth_mode,
             ),
             "antigravity": AntigravityProvider(),
+            "chatgpt": ChatGPTProvider(
+                token=config.chatgpt_token,
+                account_id=config.chatgpt_account_id,
+                auth_mode=config.chatgpt_auth_mode,
+            ),
         }
 
     def update_config(self, config: WidgetConfig):
@@ -29,9 +35,12 @@ class ProviderManager:
         if "claude" in self.providers:
             claude_prov: ClaudeProvider = self.providers["claude"]
             claude_prov.update_credentials(config.session_key, config.org_id, config.claude_auth_mode)
+        if "chatgpt" in self.providers:
+            chatgpt_prov: ChatGPTProvider = self.providers["chatgpt"]
+            chatgpt_prov.update_credentials(config.chatgpt_token, config.chatgpt_account_id, config.chatgpt_auth_mode)
 
     def fetch_all(self, demo_mode: bool = False) -> UnifiedUsageState:
-        enabled = self.config.enabled_providers or ["claude", "antigravity"]
+        enabled = self.config.enabled_providers or ["claude", "antigravity", "chatgpt"]
         provider_states: Dict[str, ProviderUsageState] = {}
         now = datetime.now(timezone.utc)
 
@@ -62,7 +71,7 @@ class ProviderManager:
 
         # Preserve standard display order
         ordered_states = {}
-        for pid in ["claude", "antigravity"]:
+        for pid in ["claude", "antigravity", "chatgpt"]:
             if pid in provider_states:
                 ordered_states[pid] = provider_states[pid]
 

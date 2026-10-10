@@ -121,7 +121,7 @@ _DAYS = ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
 _TIME_SAMPLES = tuple(f"{d} 12:34{ap} (6d 23h)" for d in _DAYS for ap in "ap")
 _TEXT_SLOT_SAMPLES = {
     "TAG_W": ((FONT_FAMILY, 8, "bold"),
-              ("✱ OPU", "✱ SON", "✱ FAB", "✱ 5H", "✱ 7D", "✦ 5H", "✦ 7D", "✱ $")),
+              ("✱ OPU", "✱ SON", "✱ FAB", "✱ 5H", "✱ 7D", "✦ 5H", "✦ 7D", "֍ 5H", "֍ 7D", "✱ $")),
     "PCT_W": ((FONT_FAMILY, 9, "bold"), ("100%",)),
     "TIME_W": ((FONT_FAMILY, 9), _TIME_SAMPLES),
     "PACE_W": ((FONT_FAMILY, 9), tuple("→" + s for s in _TIME_SAMPLES)),
